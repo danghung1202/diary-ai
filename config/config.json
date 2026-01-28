@@ -1,0 +1,33 @@
+{
+  "polling_interval_seconds": 30,
+  "idle_timeout_seconds": 300,
+  "output_directory": "logs",
+  "blacklist_processes": [
+    "Spotify.exe",
+    "WhatsApp.exe",
+    "Discord.exe"
+  ],
+  "meeting_whitelist": [
+    "Teams.exe",
+    "Zoom.exe",
+    "meet.google.com"
+  ],
+  "privacy_keywords": [
+    "password",
+    "bank",
+    "confidential",
+    "secret"
+  ],
+  "browser_processes": [
+    "chrome.exe",
+    "msedge.exe",
+    "firefox.exe"
+  ],
+  "developer_tools": [
+    "Code.exe",
+    "powershell.exe",
+    "WindowsTerminal.exe",
+    "cmd.exe"
+  ],
+  "browser_url_timeout_seconds": 0.5
+}

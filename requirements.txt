@@ -1,0 +1,5 @@
+pywin32>=305
+uiautomation>=2.0.18
+psutil>=5.9.0
+pynput>=1.7.6
+pyyaml>=6.0
