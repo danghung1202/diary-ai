@@ -31,6 +31,11 @@ def setup_logging(verbose: bool = False):
     root_logger = logging.getLogger()
     root_logger.setLevel(level)
     root_logger.addHandler(console_handler)
+    
+    # Suppress noisy third-party loggers
+    logging.getLogger('comtypes').setLevel(logging.WARNING)
+    logging.getLogger('comtypes.client').setLevel(logging.WARNING)
+    logging.getLogger('comtypes.client._generate').setLevel(logging.WARNING)
 
 
 def main():

@@ -80,14 +80,25 @@ class BrowserStrategy(ActivityStrategy):
             # Get the window control
             window = auto.ControlFromHandle(window_info.hwnd)
             if not window:
+                logger.debug("Could not get window control from handle")
                 return None
+
+            logger.debug(f"Attempting URL extraction for {window_info.process_name}")
 
             # Try to find address bar (different methods for different browsers)
             url = self._find_address_bar_chrome_edge(window)
+            if url:
+                logger.info(f"Successfully extracted URL: {url[:80]}...")
+                return url
+                
             if not url:
                 url = self._find_address_bar_firefox(window)
+                if url:
+                    logger.info(f"Successfully extracted URL: {url[:80]}...")
+                    return url
             
-            return url if url else None
+            logger.debug("All URL extraction methods failed, falling back to window title")
+            return None
 
         except Exception as e:
             logger.debug(f"URL extraction failed: {e}")
@@ -96,17 +107,42 @@ class BrowserStrategy(ActivityStrategy):
     def _find_address_bar_chrome_edge(self, window) -> Optional[str]:
         """Find address bar in Chrome/Edge."""
         try:
-            # Chrome and Edge use similar UI structure
-            # Look for Edit control with AutomationId containing "address" or name "Address and search bar"
+            # Method 1: Search by Name "Address and search bar" (Chrome/Edge)
             edit_control = window.EditControl(
-                searchDepth=8,
-                foundIndex=1
+                Name="Address and search bar",
+                searchDepth=10
             )
             
             if edit_control and edit_control.Exists(0, 0):
                 url = edit_control.GetValuePattern().Value
-                if url and url.startswith(('http://', 'https://', 'file://', 'about:')):
+                if url and (url.startswith(('http://', 'https://', 'file://')) or '.' in url):
+                    logger.debug(f"Found URL via Name 'Address and search bar': {url[:50]}...")
                     return url
+            
+            # Method 2: Try Name "Search or enter web address" (Edge alternative)
+            edit_control = window.EditControl(
+                Name="Search or enter web address",
+                searchDepth=10
+            )
+            
+            if edit_control and edit_control.Exists(0, 0):
+                url = edit_control.GetValuePattern().Value
+                if url and (url.startswith(('http://', 'https://', 'file://')) or '.' in url):
+                    logger.debug(f"Found URL via Name 'Search or enter web address': {url[:50]}...")
+                    return url
+            
+            # Method 3: Try AutomationId for Chrome
+            edit_control = window.EditControl(
+                AutomationId="Chrome_OmniboxView",
+                searchDepth=10
+            )
+            
+            if edit_control and edit_control.Exists(0, 0):
+                url = edit_control.GetValuePattern().Value
+                if url and (url.startswith(('http://', 'https://', 'file://')) or '.' in url):
+                    logger.debug(f"Found URL via AutomationId: {url[:50]}...")
+                    return url
+                    
         except Exception as e:
             logger.debug(f"Chrome/Edge address bar search failed: {e}")
         
