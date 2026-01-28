@@ -5,7 +5,7 @@ import logging
 import sys
 from pathlib import Path
 
-from activity_logger import ActivityLogger
+from .activity_logger import ActivityLogger
 
 
 def setup_logging(verbose: bool = False):

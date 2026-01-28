@@ -50,3 +50,9 @@ logs/*.md
 # Windows
 Thumbs.db
 desktop.ini
+
+# IDE
+.cursor/
+.specstory/
+.cursorindexingignore
+.cursorindexingignore
