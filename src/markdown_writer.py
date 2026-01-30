@@ -49,14 +49,18 @@ class MarkdownWriter:
         # Format time
         time_str = timestamp.strftime("%H:%M")
 
-        # Format background context
+        # Escape pipe characters in foreground description
+        foreground_escaped = self._escape_pipe_chars(foreground_description)
+
+        # Format background context and escape pipe characters
         if background_context and len(background_context) > 0:
-            bg_str = "<br>".join(background_context)
+            escaped_context = [self._escape_pipe_chars(ctx) for ctx in background_context]
+            bg_str = "<br>".join(escaped_context)
         else:
             bg_str = "-"
 
         # Create table row
-        row = f"| {time_str} | {foreground_description} | {bg_str} |\n"
+        row = f"| {time_str} | {foreground_escaped} | {bg_str} |\n"
 
         # Append to file
         try:
@@ -77,6 +81,23 @@ class MarkdownWriter:
             foreground_description="**[IDLE]**: No user activity",
             background_context=None
         )
+
+    def _escape_pipe_chars(self, text: str) -> str:
+        """Replace pipe characters to prevent breaking Markdown table format.
+        
+        Args:
+            text: Text that may contain pipe characters
+            
+        Returns:
+            Text with pipes replaced by dashes for better LLM readability
+        """
+        if not text:
+            return text
+        
+        # Replace | with - (dash) for cleaner, more LLM-friendly text
+        # This makes logs easier for AI models to parse and understand
+        # Example: "Chat | John Smith" becomes "Chat - John Smith"
+        return text.replace('|', ' - ')
 
     def _initialize_new_log_file(self, date_str: str):
         """Initialize a new log file for the given date.

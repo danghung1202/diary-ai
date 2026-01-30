@@ -75,8 +75,11 @@ class WindowDetector:
             logger.error(f"Error getting foreground window: {e}")
             return None
 
-    def scan_background_windows(self) -> List[Dict[str, str]]:
+    def scan_background_windows(self, exclude_hwnd=None) -> List[Dict[str, str]]:
         """Scan for meeting applications running in background.
+        
+        Args:
+            exclude_hwnd: Window handle to exclude (usually the foreground window)
         
         Returns:
             List of dictionaries containing meeting app info
@@ -87,6 +90,11 @@ class WindowDetector:
         try:
             # Enumerate all windows
             def enum_handler(hwnd, ctx):
+                # Skip the foreground window to avoid duplicate logging
+                if exclude_hwnd and hwnd == exclude_hwnd:
+                    logger.debug(f"Skipping foreground window (hwnd={hwnd})")
+                    return
+                    
                 if win32gui.IsWindowVisible(hwnd):
                     window_title = win32gui.GetWindowText(hwnd)
                     if window_title:  # Skip windows without title
@@ -97,10 +105,15 @@ class WindowDetector:
                             
                             # Check if it's a meeting app
                             if process_name.lower() in meeting_whitelist:
-                                meetings.append({
-                                    "app": process_name,
-                                    "title": window_title
-                                })
+                                # Only include if it's actually a meeting (not just chat)
+                                if self._is_meeting_window(process_name, window_title):
+                                    meetings.append({
+                                        "app": process_name,
+                                        "title": window_title
+                                    })
+                                    logger.debug(f"Found background meeting: {process_name} - {window_title[:50]}")
+                                else:
+                                    logger.debug(f"Skipped non-meeting window: {window_title[:50]}")
                         except (psutil.NoSuchProcess, psutil.AccessDenied):
                             pass
 
@@ -119,3 +132,58 @@ class WindowDetector:
         except Exception as e:
             logger.error(f"Error scanning background windows: {e}")
             return []
+
+    def _is_meeting_window(self, process_name: str, window_title: str) -> bool:
+        """Check if a window is actually a meeting (not just chat).
+        
+        Args:
+            process_name: Name of the process
+            window_title: Title of the window
+            
+        Returns:
+            True if this is a meeting window
+        """
+        process_lower = process_name.lower()
+        title_lower = window_title.lower()
+        
+        # Teams-specific detection
+        if "teams" in process_lower or "ms-teams" in process_lower:
+            # Meeting indicators in Teams
+            
+            # meeting_keywords = [
+            #     "meeting",           # "Meeting compact view"
+            #     "call",              # "Call with John"
+            #     "| calling",         # During a call
+            #     "| in a call",       # In a call
+            #     "in a meeting",      # In a meeting
+            # ]
+            
+            # # Check if title contains meeting keywords
+            # for keyword in meeting_keywords:
+            #     if keyword in title_lower:
+            #         logger.debug(f"Detected Teams meeting via keyword '{keyword}'")
+            #         return True
+            
+            # Exclude chat windows explicitly
+            if title_lower.startswith("chat |"):
+                logger.debug("Excluded Teams chat window")
+                return False
+            else:    
+                logger.debug(f"Detected Teams meeting because it's not a chat window: '{title_lower}'")
+                return True    
+        # Zoom-specific detection
+        elif "zoom" in process_lower:
+            # Zoom meeting window usually has "Zoom Meeting" in title
+            if "zoom meeting" in title_lower:
+                logger.debug("Detected Zoom meeting")
+                return True
+        
+        # Google Meet (browser-based)
+        elif "meet.google.com" in process_lower:
+            logger.debug("Detected Google Meet")
+            return True
+        
+        # Default: if it's in whitelist but no specific detection, don't log
+        # This prevents false positives
+        logger.debug(f"No meeting indicators found for {process_name}")
+        return False

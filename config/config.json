@@ -8,6 +8,7 @@
     "Discord.exe"
   ],
   "meeting_whitelist": [
+    "ms-teams.exe",
     "Teams.exe",
     "Zoom.exe",
     "meet.google.com"

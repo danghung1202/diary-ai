@@ -122,8 +122,10 @@ class ActivityLogger:
         # Format foreground description
         foreground_description = f"**{activity_info.app_name}**: {filtered_description}"
 
-        # Step 5: Scan background for meetings
-        background_meetings = self.window_detector.scan_background_windows()
+        # Step 5: Scan background for meetings (exclude foreground window)
+        background_meetings = self.window_detector.scan_background_windows(
+            exclude_hwnd=window_info.hwnd
+        )
         background_context = []
         
         for meeting in background_meetings:

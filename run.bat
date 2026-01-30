@@ -28,6 +28,6 @@ REM Run the logger
 echo Starting Activity Logger...
 echo Press Ctrl+C to stop
 echo.
-python -m src.main
+python -m src.main --verbose
 
 pause
