@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "diary-ai"
+version = "2.0.0"
+description = "Workday Activity Logger - Passive activity tracking optimized for AI summarization"
+requires-python = ">=3.10"
+dependencies = [
+    "pywin32>=305",
+    "uiautomation>=2.0.18",
+    "psutil>=5.9.0",
+    "pynput>=1.7.6",
+    "pyyaml>=6.0",
+    "pystray>=0.19.5",
+    "Pillow>=10.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[project.scripts]
+diary-ai = "src.main:main"
+
+[project.gui-scripts]
+diary-ai-tray = "src.main:main"

@@ -6,32 +6,36 @@ import sys
 from pathlib import Path
 
 from .activity_logger import ActivityLogger
+from .config_manager import PROJECT_ROOT
 
 
-def setup_logging(verbose: bool = False):
+def setup_logging(verbose: bool = False, tray_mode: bool = False):
     """Setup logging configuration.
-    
+
     Args:
         verbose: Enable debug logging
+        tray_mode: Write to log file instead of stdout (required when
+                   running under pythonw.exe where sys.stdout is None)
     """
     level = logging.DEBUG if verbose else logging.INFO
-    
-    # Console handler
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(level)
-    
-    # Formatter
-    formatter = logging.Formatter(
+
+    if sys.stdout is None or tray_mode:
+        log_file = PROJECT_ROOT / "logs" / "diary-ai.log"
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        handler = logging.FileHandler(log_file, encoding="utf-8")
+    else:
+        handler = logging.StreamHandler(sys.stdout)
+
+    handler.setLevel(level)
+    handler.setFormatter(logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    console_handler.setFormatter(formatter)
-    
-    # Root logger
+    ))
+
     root_logger = logging.getLogger()
     root_logger.setLevel(level)
-    root_logger.addHandler(console_handler)
-    
+    root_logger.addHandler(handler)
+
     # Suppress noisy third-party loggers
     logging.getLogger('comtypes').setLevel(logging.WARNING)
     logging.getLogger('comtypes.client').setLevel(logging.WARNING)
@@ -63,36 +67,51 @@ Examples:
         action='store_true',
         help='Enable verbose debug logging'
     )
-    
+
+    parser.add_argument(
+        '--tray',
+        action='store_true',
+        help='Run in system tray mode (background, no terminal needed)'
+    )
+
     parser.add_argument(
         '--version',
         action='version',
         version='Workday Activity Logger v2.0.0'
     )
-    
+
     args = parser.parse_args()
-    
+
     # Setup logging
-    setup_logging(args.verbose)
+    setup_logging(args.verbose, tray_mode=args.tray)
     logger = logging.getLogger(__name__)
-    
+
+    # Tray mode
+    if args.tray:
+        from .tray_app import TrayApp
+
+        logger.info("Launching system tray mode")
+        tray = TrayApp(config_path=args.config, verbose=args.verbose)
+        tray.run()
+        return
+
     # Print banner
     print("=" * 60)
     print("  Workday Activity Logger v2.0.0")
     print("  Passive activity tracking for AI summarization")
     print("=" * 60)
     print()
-    
+
     # Check if config exists
     config_path = Path(args.config)
     if not config_path.exists():
         logger.warning(f"Config file not found: {config_path}")
         logger.info("Using default configuration")
-    
+
     try:
         # Initialize and start logger
         activity_logger = ActivityLogger(args.config)
-        
+
         print(f"Configuration: {args.config}")
         print(f"Output directory: {activity_logger.config.output_directory}")
         print(f"Polling interval: {activity_logger.config.polling_interval}s")
@@ -100,10 +119,10 @@ Examples:
         print()
         print("Press Ctrl+C to stop...")
         print()
-        
+
         # Start logging
         activity_logger.start()
-        
+
     except KeyboardInterrupt:
         print("\n\nShutting down gracefully...")
         logger.info("Activity Logger stopped")

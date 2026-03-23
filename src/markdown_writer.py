@@ -99,14 +99,26 @@ class MarkdownWriter:
         # Example: "Chat | John Smith" becomes "Chat - John Smith"
         return text.replace('|', ' - ')
 
+    def _get_week_folder(self, date: datetime) -> str:
+        """Return the week subfolder name for a given date.
+
+        Example: 'Week 10 of 2026'
+        """
+        iso_year, iso_week, _ = date.isocalendar()
+        return f"Week {iso_week} of {iso_year}"
+
     def _initialize_new_log_file(self, date_str: str):
         """Initialize a new log file for the given date.
-        
+
         Args:
             date_str: Date string in YYYY-MM-DD format
         """
         self.current_date = date_str
-        self.current_file_path = self.output_dir / f"{date_str}_log.md"
+        date = datetime.strptime(date_str, "%Y-%m-%d")
+        week_folder = self._get_week_folder(date)
+        week_dir = self.output_dir / week_folder
+        week_dir.mkdir(parents=True, exist_ok=True)
+        self.current_file_path = week_dir / f"{date_str}_log.md"
 
         # Check if file already exists
         if self.current_file_path.exists():

@@ -7,6 +7,8 @@ from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
 
 class ConfigManager:
     """Manages application configuration from JSON file."""
@@ -25,11 +27,12 @@ class ConfigManager:
 
     def __init__(self, config_path: str = "config/config.json"):
         """Initialize configuration manager.
-        
+
         Args:
             config_path: Path to configuration JSON file
         """
-        self.config_path = Path(config_path)
+        path = Path(config_path)
+        self.config_path = path if path.is_absolute() else PROJECT_ROOT / path
         self.config = self._load_config()
 
     def _load_config(self) -> Dict[str, Any]:
@@ -81,7 +84,8 @@ class ConfigManager:
     @property
     def output_directory(self) -> Path:
         """Get output directory path."""
-        return Path(self.config["output_directory"])
+        path = Path(self.config["output_directory"])
+        return path if path.is_absolute() else PROJECT_ROOT / path
 
     @property
     def blacklist_processes(self) -> List[str]:
